@@ -1,2 +1,3 @@
 # fruit_classification
-Fruit classification
+
+Code refactoring and README in progress 
