@@ -9,7 +9,7 @@ from model import get_model
 import configuration as cfg
 
 
-def train(train_loader, val_loader, model, num_epochs, criterion, optimizer, device):
+def train(train_loader, val_loader, model, num_epochs, criterion, optimizer, device, scheduler=None):
     train_losses = []
     val_losses = []
     val_accuracies = []
@@ -34,13 +34,16 @@ def train(train_loader, val_loader, model, num_epochs, criterion, optimizer, dev
             train_loss += loss.item()
             train_loop.set_postfix(loss=loss.item())
 
+        if scheduler:
+            scheduler.step()
+
         train_loss /= len(train_loader)
         train_losses.append(train_loss)
 
         model.eval()
         val_loss = 0.0
         val_accuracy = 0.0
-        val_loop = tqdm(val_loader, desc=f"Validation {epoch}")
+        val_loop = tqdm(val_loader, desc=f"Validation {epoch+1}")
         with torch.no_grad():
             for inputs, labels in val_loop:
                 inputs, labels = inputs.to(device), labels.to(device)
@@ -56,11 +59,11 @@ def train(train_loader, val_loader, model, num_epochs, criterion, optimizer, dev
         val_accuracies.append(val_accuracy)
 
         print(
-            f'Epoch {epoch}: Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Val Accuracy: {val_accuracy:.4f}')
+            f'Epoch {epoch+1}: Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Val Accuracy: {val_accuracy:.4f}')
 
         if val_accuracy > best_accuracy:
             best_accuracy = val_accuracy
-            torch.save(model.state_dict(), 'best_model.pth')
+            torch.save(model.state_dict(), cfg.MODEL_WEIGHTS)
             print(f"Modèle sauvegardé avec une précision de validation de {best_accuracy:.4f}")
 
         if (epoch + 1) % plot_every == 0:
@@ -72,12 +75,14 @@ def train(train_loader, val_loader, model, num_epochs, criterion, optimizer, dev
             plt.xlabel('Epoch')
             plt.ylabel('Loss')
             plt.legend()
+            plt.grid()
 
             plt.subplot(1, 2, 2)
             plt.plot(val_accuracies, label='Val Accuracy')
             plt.xlabel('Epoch')
             plt.ylabel('Accuracy')
             plt.legend()
+            plt.grid()
 
             plt.savefig(f'data_training.png')
             plt.close()
@@ -95,13 +100,13 @@ if __name__ == "__main__":
 
     train_data_loader = torch.utils.data.DataLoader(
         dataset_train,
-        batch_size=64,
+        batch_size=32,
         shuffle=True,
     )
 
     val_data_loader = torch.utils.data.DataLoader(
         dataset_valid,
-        batch_size=64,
+        batch_size=32,
         shuffle=True,
     )
 
@@ -111,7 +116,8 @@ if __name__ == "__main__":
     model = get_model(len(class_name)).to(cfg.DEVICE)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    num_epochs = 10
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.1)
+    num_epochs = 20
 
     train(
         train_data_loader,
@@ -121,4 +127,5 @@ if __name__ == "__main__":
         criterion,
         optimizer,
         cfg.DEVICE,
+        scheduler=scheduler
     )
