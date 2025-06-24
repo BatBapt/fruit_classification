@@ -1,4 +1,6 @@
 import os
+from random import sample
+
 from PIL import Image
 import pandas as pd
 import torch
@@ -32,7 +34,7 @@ def get_classes_name(path):
     class_name = []
     with open(path, "r") as f:
         for line in f.readlines():
-            class_name.append(line.replace("_", " ").replace("\n", ""))
+            class_name.append(line.replace("\n", ""))
     return class_name
 
 
@@ -67,7 +69,6 @@ if __name__ == "__main__":
     class_name = get_classes_name(os.path.join(cfg.BASE_PATH, "classname.txt"))
 
     image, label = custom_ds[0]
-    print(image.shape)
     image_denormalize = denormalize(image)
     image_denormalize = image_denormalize.numpy().transpose((1, 2, 0))
 
