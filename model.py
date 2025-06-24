@@ -11,7 +11,7 @@ def get_model(num_classes):
     model = torchvision.models.resnet50(weights="DEFAULT")
 
     model.fc = nn.Sequential(
-        nn.Dropout(0.5),
+        nn.Dropout(0.3),
         nn.Linear(model.fc.in_features, num_classes),
     )
 
