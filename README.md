@@ -7,7 +7,7 @@ This project focuses on classifying images of fruits using a ResNet50 model. The
 
 ### custom_dataset.py
 - This file contains code to load and preprocess custom datasets.
-- It might include data augmentation techniques and transformation logic specific to the fruit images dataset.
+- Includes data augmentation techniques and transformation logic specific to the fruit images dataset.
 
 ### model.py
 - Defines the model architecture, which is based on ResNet50.
@@ -16,23 +16,38 @@ This project focuses on classifying images of fruits using a ResNet50 model. The
 ### train.py
 - Script for training the model using the fruit dataset.
 - Handles data loading, model training loop, loss calculation, and optimization.
-- May include code to save the trained model weights.
+- Includes code to save the trained model weights.
 
-### configuration.py 
+### configuration.py
+- Contains paths to dataset directories and other file paths needed during training and evaluation.
+
+### config.yaml
 - Contains configuration settings for the training process.
 - Includes hyperparameters like learning rate, batch size, number of epochs, etc.
-- Might also contain paths to dataset directories and other file paths needed during training and evaluation.
 
 ### predict.py
 - Script used for making predictions on new images using the trained model.
 - Handles loading the model weights and preprocessing new images for prediction.
-- Implements the majority voting technique to refine predictions based on grouped test data.
+- Implements the "majority voting" technique to refine predictions based on grouped test data.
 
 
 ## Dataset and Research Paper Links
 
 - Dataset: [Fruit Classification Dataset](https://www.kaggle.com/datasets/icebearogo/fruit-classification-dataset) 📂🍎
 - Research Paper: [Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385) 📄🔍
+
+
+## Training Process
+
+## Training Process 📈
+The model was trained using the following setup:
+- Fine tune a ResNet50 model by freezing all layers except last Sequential and Classification modules
+- GPU: Nvidia GeForce RTX 4060 with 8GB RAM (~15min/epoch)
+- Adam optimizer with weigth decay at ```1e-5``` with a scheduler
+- see ```config.yaml``` file for other informations
+
+
+![Loss during the training](assets/data_training.png "Loss and Accuracy during the training")
 
 ## Results and Techniques 📊
 
