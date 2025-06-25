@@ -21,43 +21,45 @@ if __name__ == "__main__":
         shuffle=False,
     )
 
-    class_name = custom_dataset.get_classes_name(os.path.join(cfg.BASE_PATH, "classname.txt"))
-
+    train_classnames = custom_dataset.get_classes_name(os.path.join(cfg.BASE_PATH, "classname.txt"))
     list_image_test = list(dataset_test.csv["image:FILE"])  # not very good way
-    true_labels = []
-    for image_name in list_image_test:
-        image_name_split = image_name.split("/")
-        label = int(image_name_split[1])
-        true_labels.append(label)
 
     device = cfg.DEVICE
-
-    best_model = get_model(len(class_name))
+    best_model = get_model(len(train_classnames))
     best_model.load_state_dict(torch.load(cfg.MODEL_WEIGHTS))
     model = best_model.to(device).eval()
 
-    predictions = []
+    pred_labels = []
 
     # Boucle de test
     with torch.no_grad():
         test_loop = tqdm(test_data_loader)
-        for inputs, labels in test_loop:
-            inputs, labels = inputs.to(device), labels.to(device)
+        for inputs, _ in test_loop:
+            inputs = inputs.to(device)
             outputs = best_model(inputs)
             preds = outputs.argmax(dim=1)
 
-            predictions.extend(preds.cpu().tolist())
+            pred_labels.extend(preds.cpu().tolist())
 
-    print(classification_report(true_labels, predictions, target_names=class_name))
 
+    # Save the predictions and try to "compute" real label
     output_res = pd.DataFrame({
         "id": list_image_test,
-        "predicted_label": predictions,
-        "true_label": true_labels
+        "predicted_label": pred_labels,
     })
-    output_res["predicted_name"] = output_res["predicted_label"].apply(lambda idx: class_name[idx])
-    true_names = [class_name[idx] for idx in true_labels]
-    output_res["true_name"] = true_names
+    output_res["predicted_name"] = output_res["predicted_label"].apply(lambda idx: train_classnames[idx])
+    output_res["true_class_id"] = output_res["id"].apply(lambda path: path.split("/")[1])
+
+
+    # Dictionnary containing all the maximum occurence of predicted label for a class for a given true class
+    # exemple: dico_class[28] = 0
+    dico_class = output_res.groupby('true_class_id')['predicted_label'].agg(lambda x: x.mode()[0]).to_dict()
+
+    # New column to map the majority vote for each row
+    output_res['majority_vote'] = output_res['true_class_id'].map(dico_class)
+    output_res['true_class_name'] = output_res['majority_vote'].map(lambda x: train_classnames[x])
+
+    print(classification_report(output_res['majority_vote'], output_res["predicted_label"], target_names=train_classnames))
 
     output_res.to_csv("submissions.csv", index=False)
     print("Saved at submissions.csv")
